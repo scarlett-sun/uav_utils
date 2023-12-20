@@ -53,6 +53,9 @@ class LeePositionControllerNode {
   ros::NodeHandle nh_;
   ros::NodeHandle private_nh_;
 
+  float controller_timer_duration_;//New added 
+  float thrust_scaling_factor_;//New added
+
   LeePositionController lee_position_controller_;
 
   std::string namespace_;

@@ -31,6 +31,8 @@ LeePositionControllerNode::LeePositionControllerNode(
   const ros::NodeHandle& nh, const ros::NodeHandle& private_nh)
   :nh_(nh),
    private_nh_(private_nh){
+  controller_timer_duration_ = 0.01;//not appropriate to initialize
+  thrust_scaling_factor_ = 50;//not appropriate way to initialize
   InitializeParams();
 
   cmd_pose_sub_ = nh_.subscribe(
@@ -97,6 +99,8 @@ void LeePositionControllerNode::InitializeParams() {
                   lee_position_controller_.controller_parameters_.angular_rate_gain_.z(),
                   &lee_position_controller_.controller_parameters_.angular_rate_gain_.z());
   GetVehicleParameters(private_nh_, &lee_position_controller_.vehicle_parameters_);
+  GetRosParameter(private_nh_,"controller_timer_duration",controller_timer_duration_,&controller_timer_duration_);
+  GetRosParameter(private_nh_,"thrust_scaling_factor",thrust_scaling_factor_,&thrust_scaling_factor_);
   lee_position_controller_.InitializeParameters();
 }
 void LeePositionControllerNode::Publish() {
@@ -119,6 +123,7 @@ void LeePositionControllerNode::CommandPoseCallback(
 
 void LeePositionControllerNode::MultiDofJointTrajectoryCallback(
     const trajectory_msgs::MultiDOFJointTrajectoryConstPtr& msg) {
+  controller_timer_.start();
   // Clear all pending commands.
   command_timer_.stop();
   commands_.clear();
@@ -210,7 +215,7 @@ void LeePositionControllerNode::ControllerTimerCallback(const ros::TimerEvent& e
   torque_thrust_msg.torque.z = torque_thrust(2);
   torque_thrust_msg.thrust.x = 0;
   torque_thrust_msg.thrust.y = 0;
-  torque_thrust_msg.thrust.z = torque_thrust(3);
+  torque_thrust_msg.thrust.z = torque_thrust(3)/thrust_scaling_factor_;
   torque_thrust_reference_pub_.publish(torque_thrust_msg);
 }
 }
