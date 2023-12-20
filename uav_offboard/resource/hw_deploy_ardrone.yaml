@@ -1,0 +1,3 @@
+# Controller deployment parameters
+controller_timer_duration: 0.01 # 100Hz, 0.01s
+thrust_scaling_factor: 50 # has to be justified by experiment，output_thrust = real computed force / thrust_scaling_factor
