@@ -37,14 +37,14 @@ LeePositionControllerNode::LeePositionControllerNode(
 
   cmd_pose_sub_ = nh_.subscribe(
       mav_msgs::default_topics::COMMAND_POSE, 1,
-      &LeePositionControllerNode::CommandPoseCallback, this);
+      &LeePositionControllerNode::CommandPoseCallback, this,ros::TransportHints().tcpNoDelay(true));
 
   cmd_multi_dof_joint_trajectory_sub_ = nh_.subscribe(
       mav_msgs::default_topics::COMMAND_TRAJECTORY, 1,
-      &LeePositionControllerNode::MultiDofJointTrajectoryCallback, this);
+      &LeePositionControllerNode::MultiDofJointTrajectoryCallback, this,ros::TransportHints().tcpNoDelay(true));
 
   odometry_sub_ = nh_.subscribe(mav_msgs::default_topics::ODOMETRY, 1,
-                               &LeePositionControllerNode::OdometryCallback, this);
+                               &LeePositionControllerNode::OdometryCallback, this,ros::TransportHints().tcpNoDelay(true));
 
   motor_velocity_reference_pub_ = nh_.advertise<mav_msgs::Actuators>(
       mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
