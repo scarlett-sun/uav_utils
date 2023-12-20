@@ -9,12 +9,22 @@ project(uav_offboard)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  rospy
   std_msgs
+  geometry_msgs
+  mav_msgs
+  sensor_msgs
 )
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+catkin_package(
+  CATKIN_DEPENDS
+    roscpp
+    std_msgs
+    geometry_msgs
+    mav_msgs
+    sensor_msgs
+)
+
+include_directories(include ${catkin_INCLUDE_DIRS})
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -125,30 +135,11 @@ include_directories(
 #   src/${PROJECT_NAME}/uav_offboard.cpp
 # )
 
-## Add cmake target dependencies of the library
-## as an example, code may need to be generated before libraries
-## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/uav_offboard_node.cpp)
+add_executable(waypoint_publisher_circular src/waypoint_publisher_circular.cpp)
+target_link_libraries(waypoint_publisher_circular ${catkin_LIBRARIES})
+add_dependencies(waypoint_publisher_circular ${catkin_EXPORTED_TARGETS})
 
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
 
 #############
 ## Install ##
@@ -164,11 +155,11 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-## Mark executables for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS waypoint_publisher_circular
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
