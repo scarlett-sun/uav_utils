@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   cmake_modules
+  mavros_msgs
 )
 
 find_package(Eigen3 REQUIRED)
@@ -17,7 +18,7 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
   INCLUDE_DIRS include ${Eigen3_INCLUDE_DIRS}
   LIBRARIES lee_position_controller
-  CATKIN_DEPENDS geometry_msgs mav_msgs nav_msgs roscpp sensor_msgs
+  CATKIN_DEPENDS geometry_msgs mav_msgs nav_msgs roscpp sensor_msgs mavros_msgs
   DEPENDS Eigen3
 )
 

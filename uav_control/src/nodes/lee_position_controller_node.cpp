@@ -46,9 +46,13 @@ LeePositionControllerNode::LeePositionControllerNode(
 
   motor_velocity_reference_pub_ = nh_.advertise<mav_msgs::Actuators>(
       mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
+  
+  torque_thrust_reference_pub_ = nh_.advertise<mavros_msgs::TorqueThrust>("/mavros/torque_thrust",1);
 
   command_timer_ = nh_.createTimer(ros::Duration(0), &LeePositionControllerNode::TimedCommandCallback, this,
                                   true, false);
+  controller_timer_ = nh_.createTimer(ros::Duration(0.01), &LeePositionControllerNode::ControllerTimerCallback, this,
+                                  false, false);
 }
 
 LeePositionControllerNode::~LeePositionControllerNode() { }
@@ -177,21 +181,38 @@ void LeePositionControllerNode::OdometryCallback(const nav_msgs::OdometryConstPt
   EigenOdometry odometry;
   eigenOdometryFromMsg(odometry_msg, &odometry);
   lee_position_controller_.SetOdometry(odometry);
+}
 
+void LeePositionControllerNode::ControllerTimerCallback(const ros::TimerEvent& e){
+  if (!lee_position_controller_.GetControllerState()) {
+    return;
+  }
+  Eigen::Vector4d torque_thrust;
+  lee_position_controller_.OverallController(torque_thrust);
   Eigen::VectorXd ref_rotor_velocities;
-  lee_position_controller_.CalculateRotorVelocities(&ref_rotor_velocities);
+  lee_position_controller_.CalculateRotorVelocities(torque_thrust, &ref_rotor_velocities);
 
+  //publish motor speed message
   // Todo(ffurrer): Do this in the conversions header.
   mav_msgs::ActuatorsPtr actuator_msg(new mav_msgs::Actuators);
 
   actuator_msg->angular_velocities.clear();
   for (int i = 0; i < ref_rotor_velocities.size(); i++)
     actuator_msg->angular_velocities.push_back(ref_rotor_velocities[i]);
-  actuator_msg->header.stamp = odometry_msg->header.stamp;
-
+  actuator_msg->header.stamp = ros::Time::now();
   motor_velocity_reference_pub_.publish(actuator_msg);
+  
+  // publish torque_thrust message 
+  mavros_msgs::TorqueThrust torque_thrust_msg{};
+  torque_thrust_msg.header.stamp = actuator_msg->header.stamp;
+  torque_thrust_msg.torque.x = torque_thrust(0);
+  torque_thrust_msg.torque.y = torque_thrust(1);
+  torque_thrust_msg.torque.z = torque_thrust(2);
+  torque_thrust_msg.thrust.x = 0;
+  torque_thrust_msg.thrust.y = 0;
+  torque_thrust_msg.thrust.z = torque_thrust(3);
+  torque_thrust_reference_pub_.publish(torque_thrust_msg);
 }
-
 }
 
 int main(int argc, char** argv) {

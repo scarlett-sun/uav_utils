@@ -39,20 +39,20 @@ void LeePositionController::InitializeParameters() {
   normalized_angular_rate_gain_ = controller_parameters_.angular_rate_gain_.transpose()
       * vehicle_parameters_.inertia_.inverse();
 
-  Eigen::Matrix4d I;
-  I.setZero();
-  I.block<3, 3>(0, 0) = vehicle_parameters_.inertia_;
-  I(3, 3) = 1;
-  angular_acc_to_rotor_velocities_.resize(vehicle_parameters_.rotor_configuration_.rotors.size(), 4);
+  // Eigen::Matrix4d I;
+  // I.setZero();
+  // I.block<3, 3>(0, 0) = vehicle_parameters_.inertia_;
+  // I(3, 3) = 1;
+  torque_thrust_to_rotor_velocities_.resize(vehicle_parameters_.rotor_configuration_.rotors.size(), 4);
   // Calculate the pseude-inverse A^{ \dagger} and then multiply by the inertia matrix I.
   // A^{ \dagger} = A^T*(A*A^T)^{-1}
-  angular_acc_to_rotor_velocities_ = controller_parameters_.allocation_matrix_.transpose()
+  torque_thrust_to_rotor_velocities_ = controller_parameters_.allocation_matrix_.transpose()
       * (controller_parameters_.allocation_matrix_
-      * controller_parameters_.allocation_matrix_.transpose()).inverse() * I;
+      * controller_parameters_.allocation_matrix_.transpose()).inverse();
   initialized_params_ = true;
 }
 
-void LeePositionController::CalculateRotorVelocities(Eigen::VectorXd* rotor_velocities) const {
+void LeePositionController::CalculateRotorVelocities(const Eigen::Vector4d& torque_thrust, Eigen::VectorXd* rotor_velocities) const {
   assert(rotor_velocities);
   assert(initialized_params_);
 
@@ -63,22 +63,21 @@ void LeePositionController::CalculateRotorVelocities(Eigen::VectorXd* rotor_velo
     return;
   }
 
+  *rotor_velocities = torque_thrust_to_rotor_velocities_ * torque_thrust;
+  *rotor_velocities = rotor_velocities->cwiseMax(Eigen::VectorXd::Zero(rotor_velocities->rows()));
+  *rotor_velocities = rotor_velocities->cwiseSqrt();
+}
+
+void LeePositionController::OverallController(Eigen::Vector4d &torque_thrust){
   Eigen::Vector3d acceleration;
   ComputeDesiredAcceleration(&acceleration);
-
+  
   Eigen::Vector3d angular_acceleration;
   ComputeDesiredAngularAcc(acceleration, &angular_acceleration);
 
-  // Project thrust onto body z axis.
   double thrust = -vehicle_parameters_.mass_ * acceleration.dot(odometry_.orientation.toRotationMatrix().col(2));
-
-  Eigen::Vector4d angular_acceleration_thrust;
-  angular_acceleration_thrust.block<3, 1>(0, 0) = angular_acceleration;
-  angular_acceleration_thrust(3) = thrust;
-
-  *rotor_velocities = angular_acc_to_rotor_velocities_ * angular_acceleration_thrust;
-  *rotor_velocities = rotor_velocities->cwiseMax(Eigen::VectorXd::Zero(rotor_velocities->rows()));
-  *rotor_velocities = rotor_velocities->cwiseSqrt();
+  torque_thrust.block<3, 1>(0, 0) = vehicle_parameters_.inertia_*angular_acceleration;
+  torque_thrust(3) = thrust;
 }
 
 void LeePositionController::SetOdometry(const EigenOdometry& odometry) {
@@ -148,6 +147,10 @@ void LeePositionController::ComputeDesiredAngularAcc(const Eigen::Vector3d& acce
 
   *angular_acceleration = -1 * angle_error.cwiseProduct(normalized_attitude_gain_)
                            - angular_rate_error.cwiseProduct(normalized_angular_rate_gain_)
-                           + odometry_.angular_velocity.cross(odometry_.angular_velocity); // we don't need the inertia matrix here
+                           + vehicle_parameters_.inertia_.inverse()*odometry_.angular_velocity.cross(vehicle_parameters_.inertia_*odometry_.angular_velocity); // we don't need the inertia matrix here
+}
+
+bool LeePositionController::GetControllerState() const{
+  return controller_active_;
 }
 }

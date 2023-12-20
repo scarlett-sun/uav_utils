@@ -37,6 +37,8 @@
 #include "uav_control/common.h"
 #include "uav_control/lee_position_controller.h"
 
+#include "mavros_msgs/TorqueThrust.h" //self defined
+
 namespace uav_control {
 
 class LeePositionControllerNode {
@@ -62,12 +64,16 @@ class LeePositionControllerNode {
   ros::Subscriber odometry_sub_;
 
   ros::Publisher motor_velocity_reference_pub_;
+  ros::Publisher torque_thrust_reference_pub_;
 
   mav_msgs::EigenTrajectoryPointDeque commands_;
   std::deque<ros::Duration> command_waiting_times_;
   ros::Timer command_timer_;
+  ros::Timer controller_timer_;//New added
 
   void TimedCommandCallback(const ros::TimerEvent& e);
+
+  void ControllerTimerCallback(const ros::TimerEvent& e);
 
   void MultiDofJointTrajectoryCallback(
       const trajectory_msgs::MultiDOFJointTrajectoryConstPtr& trajectory_reference_msg);
