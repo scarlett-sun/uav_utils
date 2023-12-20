@@ -1,3 +1,4 @@
+### 需求
 * 将命名空间从rotors_control修改为uav_control，以示与原代码区分。
 
 * 将ComputeDesiredAcceleration函数增加了惯性矩阵，应该算是一种修正，原来的代码有问题。
@@ -19,5 +20,16 @@
 
 * 检查消息频率是否都为100Hz
 * 为每一次能正常function的提交写使用文档。
+
+### Usage
+1. Launch a hovering example
+```bash
+roslaunch uav_offboard sim_mav_hovering_example.launch
+``` 
+
+2. Circular trajectory tracking(see package uav_offboard README.md for detail)
+```bash
+rosrun uav_offboard waypoint_publisher_circular __ns:=/ardrone 2 0 0 1 1 0 0 0 360 1 10
+```
 
 
