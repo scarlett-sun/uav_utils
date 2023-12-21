@@ -1,0 +1,7 @@
+<launch>
+  <node name="rc_command_processing_node" pkg="rc_command_pkg" type="rc_command_processing_node" output="screen">
+    <!-- <remap from="command/trajectory" to="/$(arg ava_name)/command/trajectory"/> -->
+    <!-- <remap from="mavros/local_position/odom" to="/$(arg ava_name)/carbon_frame/odometry_sensor1/odometry"/> -->
+    <rosparam command="load" file="$(find uav_offboard)/resource/rc_configuration.yaml" />    
+  </node>
+</launch>

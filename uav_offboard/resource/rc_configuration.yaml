@@ -1,0 +1,10 @@
+channel_configuration:
+  '0': {min: 1094, mid: 1515, max: 1934}
+  '1': {min: 1094, mid: 1515, max: 1934}
+  '2': {min: 1094, mid: 1515, max: 1934}
+  '3': {min: 1094, mid: 1515, max: 1934}
+
+linear_velocity_max: {x: 0.1, y: 0.1, z: 0.1} # m/s
+angular_velocity_max: {x: 0.1, y: 0.1, z: 0.1} # rad/s
+
+delta_t: 0.01 # 0.01s, 100Hz

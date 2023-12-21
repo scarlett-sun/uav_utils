@@ -61,6 +61,9 @@
   <depend>geometry_msgs</depend>
   <depend>mav_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>mavros_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>trajectory_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
