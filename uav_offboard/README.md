@@ -25,10 +25,12 @@ rosrun uav_offboard waypoint_publisher_circular __ns:=/ardrone 2 0 0 1 1 0 0 0 3
 // kill, not arm,let_fly=true/false --> let_fly = false, count_ = 0
 // 油门放在最低点不由程序判断，而是由遥控器自身报警或者用户自行判断。
 // 遥控油门正反需要在遥控器内部设置，会影响到部分代码逻辑，需要在文档中说明。
-// 12.22
-// 纯代码来看，还差一个数据成员初始化和代码风格统一（google）
-// 校对max, min, mid，考虑是否在yaml中增加zero_zone(15/25)
+
+// 纯代码来看，还差一个数据成员初始化和代码风格统一（google）,
+// 校对max, min, mid，ok
+// 接入单机进行gazebo, ok
+// 考虑是否在yaml中增加zero_zone(15/25)
 // 在launch文件里写好接口示例
-// 接入单机进行gazebo
-// 写好文档，对可能需要用户修改的代码逻辑进行说明。
+// clear or commented the ros info stream debug code
+// 写好文档，对可能需要用户修改的代码逻辑进行说明
 ```
