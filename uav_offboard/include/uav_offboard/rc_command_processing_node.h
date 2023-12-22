@@ -24,6 +24,7 @@ class RcCommandProcessingNode{
 
  private://node and callbacks
   ros::NodeHandle nh_;
+  ros::NodeHandle private_nh_;
   void TimedCommandCallback(const ros::TimerEvent& e);
   void OdometryCallback(const nav_msgs::OdometryConstPtr& msg);
   void RcInCallback(const mavros_msgs::RCInConstPtr& msg);

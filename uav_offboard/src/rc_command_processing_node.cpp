@@ -1,6 +1,6 @@
 #include "uav_offboard/rc_command_processing_node.h"
 
-RcCommandProcessingNode::RcCommandProcessingNode(const ros::NodeHandle& nh):nh_(nh) {
+RcCommandProcessingNode::RcCommandProcessingNode(const ros::NodeHandle& nh):nh_(nh),private_nh_("~") {
   trajectory_point_msg_.points.resize(1);
   trajectory_point_msg_.points[0].transforms.resize(1);
   trajectory_point_msg_.points[0].velocities.resize(1);
@@ -33,10 +33,10 @@ void RcCommandProcessingNode::InitializeParams(){
   is_normal_ = true;
   position_or_attitude_ = true;
   
-  GetChannelConfiguration(nh_,ch_config_);
-  GetMaxVelocity(nh_,twist_);
+  GetChannelConfiguration(private_nh_,ch_config_);
+  GetMaxVelocity(private_nh_,twist_);
   dt_ = kDefaultDt;	
-  GetDeltaT(nh_,dt_);
+  GetDeltaT(private_nh_,dt_);
 
   count_ = 0;
   thrust_mid_ = ch_config_.channels.at(2).mid;
@@ -84,20 +84,20 @@ void RcCommandProcessingNode::TimedCommandCallback(const ros::TimerEvent& e){
 /*Set current arm & kill combination state, need to be customized*/
 void RcCommandProcessingNode::SetArmKillInfo(){
   if(sw_kill_ < 1500 && sw_arm_ > 1500){//do no kill, do arm
-	ROS_INFO_STREAM("arm state");
+	// ROS_INFO_STREAM("arm state");
 	is_killed_ = false;
 	is_armed_ = true;
 	is_normal_ = false;
   }
   else if((sw_kill_ > 1500 && sw_arm_ > 1500)
   			||(sw_kill_ > 1500 && sw_arm_ < 1500)){//do kill, whether do arm or not
-	ROS_INFO_STREAM("kill state");
+	// ROS_INFO_STREAM("kill state");
 	is_armed_ = false;
 	is_killed_ = true;
 	is_normal_ = false;
   }
   else if(sw_kill_ < 1500 && sw_arm_ < 1500){//do no kill,do no arm
-	ROS_INFO_STREAM("normal state");
+	// ROS_INFO_STREAM("normal state");
 	is_armed_=false;
 	is_killed_ = false;
 	is_normal_ = true;
@@ -105,12 +105,12 @@ void RcCommandProcessingNode::SetArmKillInfo(){
 
   //judge if the thrust is up to middle
   if(is_armed_==true && thrust_last_time_ <= thrust_mid_ && thrust_ >= thrust_mid_){
-	ROS_INFO_STREAM("armed and the uav will fly..");
+	// ROS_INFO_STREAM("armed and the uav will fly..");
 	count_ ++;
 	if(count_>2){count_=2;}//prevent overflow
 
 	if(count_ == 1){//will execute only once
-	  ROS_INFO_STREAM("init controller ....");
+	//   ROS_INFO_STREAM("init controller ....");
 	  pos_setpoint_ = pos_last_;
       att_setpoint_ = euler_last_;
 
@@ -122,7 +122,7 @@ void RcCommandProcessingNode::SetArmKillInfo(){
 	}
   }
   else if (is_killed_==true || is_normal_==true){
-	ROS_INFO_STREAM("killed or normal");
+	// ROS_INFO_STREAM("killed or normal");
 	count_ = 0;
 	timer_.stop();
   }	
