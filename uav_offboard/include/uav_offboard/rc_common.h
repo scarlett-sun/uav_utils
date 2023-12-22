@@ -1,8 +1,10 @@
-#ifndef INCLUDE_UAV_OFFBOARD_DEFAULT_VALUES_H_
-#define INCLUDE_UAV_OFFBOARD_DEFAULT_VALUES_H_
+#ifndef INCLUDE_UAV_OFFBOARD_RC_COMMON_H_
+#define INCLUDE_UAV_OFFBOARD_RC_COMMON_H_
 
 #include <Eigen/Eigen>
 #include <ros/ros.h>
+#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/Vector3.h>
 
 static constexpr float kDefault_Vx_Max = 0.1;
 static constexpr float kDefault_Vy_Max = 0.1;
@@ -59,8 +61,9 @@ struct ChannelConfiguration {
   std::vector<Channel> channels;
 };
 
+/*get ros parameter channel configuration*/
 inline void GetChannelConfiguration(const ros::NodeHandle& nh,
-                                  ChannelConfiguration& channel_configuration) {
+                                    ChannelConfiguration& channel_configuration) {
   std::map<std::string, double> single_channel;
   std::string channel_configuration_string = "channel_configuration/";
   unsigned int i = 0;
@@ -80,6 +83,7 @@ inline void GetChannelConfiguration(const ros::NodeHandle& nh,
   }
 }
 
+/*get ros parameter max velocity*/
 inline void GetMaxVelocity(const ros::NodeHandle& nh,Twist& twist){
   nh.getParam("linear_velocity_max/x",twist.v_max[0]);
   nh.getParam("linear_velocity_max/y",twist.v_max[1]);
@@ -89,7 +93,19 @@ inline void GetMaxVelocity(const ros::NodeHandle& nh,Twist& twist){
   nh.getParam("angular_velocity_max/z",twist.omega_max[2]);
 }
 
+/*get ros parameter delta_t*/
 inline void GetDeltaT(const ros::NodeHandle& nh, float& delta_t){
   nh.getParam("delta_t",delta_t);
+}
+
+/*Get euler angles from quaternion*/
+inline void GetEulerAnglesFromQuaternion(const geometry_msgs::Quaternion& q, 
+                                        geometry_msgs::Vector3& euler_angles){
+  euler_angles.x = std::atan2(2.0 * (q.w * q.x + q.y * q.z),
+                           1.0 - 2.0 * (q.x * q.x + q.y * q.y));
+	euler_angles.y = 2 * std::atan2(std::sqrt(1 + 2 * (q.w * q.y - q.x * q.z)), 
+            				std::sqrt(1 - 2 * (q.w * q.y - q.x * q.z))) - M_PI / 2;
+  euler_angles.z = std::atan2(2.0 * (q.w * q.z + q.x * q.y),
+							1.0 - 2.0 * (q.y * q.y + q.z * q.z));
 }
 #endif
