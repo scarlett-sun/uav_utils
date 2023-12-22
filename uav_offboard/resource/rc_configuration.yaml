@@ -3,8 +3,9 @@ channel_configuration:
   '1': {min: 1094, mid: 1515, max: 1934}
   '2': {min: 1094, mid: 1515, max: 1934}
   '3': {min: 1094, mid: 1515, max: 1934}
+# the above value is not suitable
 
-linear_velocity_max: {x: 0.1, y: 0.1, z: 0.1} # m/s
-angular_velocity_max: {x: 0.1, y: 0.1, z: 0.1} # rad/s
+linear_velocity_max: {x: 0.8, y: 0.8, z: 0.5} # m/s
+angular_velocity_max: {x: 0.5, y: 0.5, z: 0.5} # rad/s
 
 delta_t: 0.01 # 0.01s, 100Hz
