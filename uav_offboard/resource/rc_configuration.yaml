@@ -1,9 +1,9 @@
 channel_configuration:
-  '0': {min: 1094, mid: 1515, max: 1934}
-  '1': {min: 1094, mid: 1515, max: 1934}
-  '2': {min: 1094, mid: 1515, max: 1934}
-  '3': {min: 1094, mid: 1515, max: 1934}
-# the above value is not suitable
+  '0': {min: 1079, mid: 1499, max: 1918} # right horizontal joystick: left, mid, right
+  '1': {min: 1082, mid: 1502, max: 1921} # left vertical joystick:    up  , mid, down 
+  '2': {min: 1063, mid: 1515, max: 1934} # right vertical joystick:   down, mid, up
+  '3': {min: 1079, mid: 1497, max: 1918} # left horizontal joystick:  left, mid, right
+# the above value is suitable for remote controller with tag: "Jiali Sun RC 5DOF-back"
 
 linear_velocity_max: {x: 0.8, y: 0.8, z: 0.5} # m/s
 angular_velocity_max: {x: 0.5, y: 0.5, z: 0.5} # rad/s
