@@ -30,7 +30,15 @@ rosrun uav_offboard waypoint_publisher_circular __ns:=/ardrone 2 0 0 1 1 0 0 0 3
 // 校对max, min, mid，ok
 // 接入单机进行gazebo, ok
 // 考虑是否在yaml中增加zero_zone(15/25)
+// 通信频率还没有检查。
 // 在launch文件里写好接口示例
 // clear or commented the ros info stream debug code
 // 写好文档，对可能需要用户修改的代码逻辑进行说明
+// Add foxglove panel布置说明
+```
+
+#### Offboard real flight under rc signal command
+```bash
+roslaunch mavros px4.launch
+roslaunch uav_offboard rc_command_processing.launch
 ```
