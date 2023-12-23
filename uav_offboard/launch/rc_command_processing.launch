@@ -5,3 +5,4 @@
     <rosparam command="load" file="$(find uav_offboard)/resource/rc_configuration.yaml" />    
   </node>
 </launch>
+<!--his launch file can be used for setpoint_position offboard real flight-->
