@@ -34,10 +34,12 @@ class RcCommandProcessingNode{
   void MapJoystickToVel();
   void ComputeSetpoint();
   void SetAndPubTrajectoryPoint();
+  void SetAndPubGeometryPose();
   void InitializeParams();
 
  public://publishers and subscribers and timers
-  ros::Publisher trajectory_point_pub_;
+  ros::Publisher trajectory_point_pub_;//for rotors gazebo simulation
+  ros::Publisher setpoint_pos_pub_;//for offboard real flight
   ros::Publisher attitude_euler_pub_;//for debug only
   ros::Subscriber get_rc_channel_sub_;
   ros::Subscriber local_pos_sub_;
@@ -51,7 +53,7 @@ class RcCommandProcessingNode{
   geometry_msgs::Vector3 pos_velocity_setpoint_;//linear velocity setpoint
   geometry_msgs::Vector3 att_velocity_setpoint_;//angular velocity setpoint
   trajectory_msgs::MultiDOFJointTrajectory trajectory_point_msg_;//trajectory to send to the controller
-
+  geometry_msgs::PoseStamped pose_stamped_msg_;
  private:
   /*---------RCIn--------*/
   int sw_arm_;//arm switch, LS

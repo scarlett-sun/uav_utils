@@ -10,6 +10,7 @@ RcCommandProcessingNode::RcCommandProcessingNode(const ros::NodeHandle& nh):nh_(
 
   timer_ = nh_.createTimer(ros::Duration(dt_), &RcCommandProcessingNode::TimedCommandCallback, this,false, false);//timer
   trajectory_point_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>("command/trajectory",10);//trajectory point publisher
+  setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",10);
   attitude_euler_pub_ = nh_.advertise<geometry_msgs::Vector3>("attitude_euler",10);
   get_rc_channel_sub_ = nh_.subscribe("/mavros/rc/in",100, &RcCommandProcessingNode::RcInCallback,this);// rc signal subscriber
   local_pos_sub_ = nh_.subscribe("mavros/local_position/odom", 10, &RcCommandProcessingNode::OdometryCallback,this);// odom subscriber
@@ -31,7 +32,7 @@ void RcCommandProcessingNode::InitializeParams(){
   is_armed_ = false;
   is_killed_ = false;
   is_normal_ = true;
-  position_or_attitude_ = true;
+  position_or_attitude_ = true;//default position mode
   
   GetChannelConfiguration(private_nh_,ch_config_);
   GetMaxVelocity(private_nh_,twist_);
@@ -64,11 +65,12 @@ void RcCommandProcessingNode::RcInCallback(const mavros_msgs::RCInConstPtr& msg)
 	joystick_value_[i]=msg->channels[i];
   }
 
-  if(msg->channels[8]<1500){
-	position_or_attitude_ = true;//position command
-  }else{
-	position_or_attitude_ = false;//attitude command
-  }
+  // comment the below four lines since for now we only consider position mode
+  // if(msg->channels[8]<1500){
+	// position_or_attitude_ = true;//position command
+  // }else{
+	// position_or_attitude_ = false;//attitude command
+  // }
 
   SetArmKillInfo();
 }
@@ -78,6 +80,7 @@ void RcCommandProcessingNode::TimedCommandCallback(const ros::TimerEvent& e){
   MapJoystickToVel();
   ComputeSetpoint();
   SetAndPubTrajectoryPoint();
+  SetAndPubGeometryPose();
   attitude_euler_pub_.publish(att_setpoint_);//for debug only
 }
 
@@ -118,6 +121,7 @@ void RcCommandProcessingNode::SetArmKillInfo(){
 	  att_velocity_setpoint_.x = 0;	att_velocity_setpoint_.y = 0;	att_velocity_setpoint_.z = 0;
 
 	  SetAndPubTrajectoryPoint();
+    SetAndPubGeometryPose();
 	  timer_.start();//start the timer
 	}
   }
@@ -191,6 +195,18 @@ void RcCommandProcessingNode::SetAndPubTrajectoryPoint(){
   trajectory_point_msg_.points[0].velocities[0].angular = att_velocity_setpoint_;
   
   trajectory_point_pub_.publish(trajectory_point_msg_);
+}
+
+/*Set and publish geometry_msg::posestamped message*/
+void RcCommandProcessingNode::SetAndPubGeometryPose(){
+  pose_stamped_msg_.pose.position.x = pos_setpoint_.x;
+  pose_stamped_msg_.pose.position.y = pos_setpoint_.y;
+  pose_stamped_msg_.pose.position.z = pos_setpoint_.z;
+  pose_stamped_msg_.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw
+  															(att_setpoint_.x, att_setpoint_.y, att_setpoint_.z);
+  pose_stamped_msg_.header.stamp = ros::Time::now();
+  
+  setpoint_pos_pub_.publish(pose_stamped_msg_);
 }
 
 int main(int argc, char **argv){
