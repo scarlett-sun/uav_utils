@@ -42,3 +42,5 @@ rosrun uav_offboard waypoint_publisher_circular __ns:=/ardrone 2 0 0 1 1 0 0 0 3
 roslaunch mavros px4.launch
 roslaunch uav_offboard rc_command_processing.launch
 ```
+
+现在的情况是，需要另外一个节点去

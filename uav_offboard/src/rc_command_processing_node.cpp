@@ -9,11 +9,17 @@ RcCommandProcessingNode::RcCommandProcessingNode(const ros::NodeHandle& nh):nh_(
   InitializeParams();
 
   timer_ = nh_.createTimer(ros::Duration(dt_), &RcCommandProcessingNode::TimedCommandCallback, this,false, false);//timer
+  
   trajectory_point_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>("command/trajectory",10);//trajectory point publisher
   setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",10);
   attitude_euler_pub_ = nh_.advertise<geometry_msgs::Vector3>("attitude_euler",10);
+  
   get_rc_channel_sub_ = nh_.subscribe("/mavros/rc/in",100, &RcCommandProcessingNode::RcInCallback,this);// rc signal subscriber
   local_pos_sub_ = nh_.subscribe("mavros/local_position/odom", 10, &RcCommandProcessingNode::OdometryCallback,this);// odom subscriber
+  state_sub_ = nh_.subscribe<mavros_msgs::State>("mavros/state", 10, &RcCommandProcessingNode::StateCallback,this);
+
+  arming_client_ = nh_.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
+  set_mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");  
 }
 
 RcCommandProcessingNode::~RcCommandProcessingNode(){};
@@ -41,6 +47,14 @@ void RcCommandProcessingNode::InitializeParams(){
 
   count_ = 0;
   thrust_mid_ = ch_config_.channels.at(2).mid;
+
+  offb_set_mode_srv_.request.custom_mode = "OFFBOARD";
+  arm_cmd_srv_.request.value = true;
+}
+
+
+void RcCommandProcessingNode::StateCallback(const mavros_msgs::State::ConstPtr& msg){
+    current_state_ = *msg;
 }
 
 /*Use the initial pose as the first trajectory setpoint command*/
@@ -49,13 +63,18 @@ void RcCommandProcessingNode::OdometryCallback(const nav_msgs::OdometryConstPtr&
 	pos_last_.x = msg->pose.pose.position.x;
 	pos_last_.y = msg->pose.pose.position.y;
 	pos_last_.z = msg->pose.pose.position.z;
+  pos_setpoint_ = pos_last_;
 	GetEulerAnglesFromQuaternion(msg->pose.pose.orientation,euler_last_);
+  att_setpoint_ = euler_last_;
+  SetAndPubGeometryPose();
   }
+  // As long as the joystick does push above middle point
+  // the local_position received from mavros will in turn serve as setpoint_position command
 }
 
 /*Process remote controller signals, need to be customized*/
 void RcCommandProcessingNode::RcInCallback(const mavros_msgs::RCInConstPtr& msg){
-  sw_arm_ = msg->channels[6];
+  sw_arm_ = msg->channels[13];//the real number is 6
   sw_kill_ = msg->channels[5];
   sw_position_attitude_ = msg->channels[4];
   thrust_last_time_ = thrust_;
@@ -91,6 +110,17 @@ void RcCommandProcessingNode::SetArmKillInfo(){
 	is_killed_ = false;
 	is_armed_ = true;
 	is_normal_ = false;
+  if( current_state_.mode != "OFFBOARD"){
+    if( set_mode_client_.call(offb_set_mode_srv_) &&offb_set_mode_srv_.response.mode_sent){
+      ROS_INFO("Offboard enabled");
+    }
+  }else {
+      if(!current_state_.armed){
+        if( arming_client_.call(arm_cmd_srv_) && arm_cmd_srv_.response.success){
+          ROS_INFO("Vehicle armed");
+        }
+      }
+    } 
   }
   else if((sw_kill_ > 1500 && sw_arm_ > 1500)
   			||(sw_kill_ > 1500 && sw_arm_ < 1500)){//do kill, whether do arm or not

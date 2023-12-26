@@ -17,6 +17,11 @@
 #include <nav_msgs/Odometry.h>
 #include "uav_offboard/rc_common.h"
 
+#include <mavros_msgs/CommandBool.h>
+#include <mavros_msgs/SetMode.h>
+#include <mavros_msgs/State.h>
+
+
 class RcCommandProcessingNode{
  public:
   RcCommandProcessingNode(const ros::NodeHandle& nh);
@@ -28,6 +33,7 @@ class RcCommandProcessingNode{
   void TimedCommandCallback(const ros::TimerEvent& e);
   void OdometryCallback(const nav_msgs::OdometryConstPtr& msg);
   void RcInCallback(const mavros_msgs::RCInConstPtr& msg);
+  void StateCallback(const mavros_msgs::State::ConstPtr& msg);
 
  private://member functions
   void SetArmKillInfo();
@@ -43,7 +49,12 @@ class RcCommandProcessingNode{
   ros::Publisher attitude_euler_pub_;//for debug only
   ros::Subscriber get_rc_channel_sub_;
   ros::Subscriber local_pos_sub_;
+  ros::Subscriber state_sub_;
+
   ros::Timer timer_;
+
+  ros::ServiceClient arming_client_;
+  ros::ServiceClient set_mode_client_;
 
  private://msgs
   geometry_msgs::Vector3 pos_last_;//define setpoint last variables for integral last setpoint
@@ -54,6 +65,11 @@ class RcCommandProcessingNode{
   geometry_msgs::Vector3 att_velocity_setpoint_;//angular velocity setpoint
   trajectory_msgs::MultiDOFJointTrajectory trajectory_point_msg_;//trajectory to send to the controller
   geometry_msgs::PoseStamped pose_stamped_msg_;
+  mavros_msgs::State current_state_;
+
+  mavros_msgs::SetMode offb_set_mode_srv_;
+  mavros_msgs::CommandBool arm_cmd_srv_;
+
  private:
   /*---------RCIn--------*/
   int sw_arm_;//arm switch, LS
