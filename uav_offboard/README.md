@@ -43,4 +43,4 @@ roslaunch mavros px4.launch
 roslaunch uav_offboard rc_command_processing.launch
 ```
 
-现在的情况是，需要另外一个节点去
+新增SE开关为fake arm（only used in offboard mode），增加ros service以实现软件arm和软件切off-board模式
