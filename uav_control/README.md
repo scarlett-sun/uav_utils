@@ -32,4 +32,9 @@ roslaunch uav_offboard sim_mav_hovering_example.launch
 rosrun uav_offboard waypoint_publisher_circular __ns:=/ardrone 2 0 0 1 1 0 0 0 360 1 10
 ```
 
+3. Check topic frequency
+```
+rosrun rqt_topic rqt_topic
+```
+
 
