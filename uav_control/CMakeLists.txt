@@ -17,7 +17,7 @@ find_package(Eigen3 REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include ${Eigen3_INCLUDE_DIRS}
-  LIBRARIES lee_position_controller
+  LIBRARIES uav_lee_position_controller
   CATKIN_DEPENDS geometry_msgs mav_msgs nav_msgs roscpp sensor_msgs mavros_msgs
   DEPENDS Eigen3
 )
@@ -28,19 +28,19 @@ include_directories(
   ${Eigen3_INCLUDE_DIRS}
 )
 
-add_library(lee_position_controller
+add_library(uav_lee_position_controller
   src/library/lee_position_controller.cpp
 )
 
-target_link_libraries(lee_position_controller ${catkin_LIBRARIES})
-add_dependencies(lee_position_controller ${catkin_EXPORTED_TARGETS})
+target_link_libraries(uav_lee_position_controller ${catkin_LIBRARIES})
+add_dependencies(uav_lee_position_controller ${catkin_EXPORTED_TARGETS})
 
 add_executable(lee_position_controller_node src/nodes/lee_position_controller_node.cpp)
 add_dependencies(lee_position_controller_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(lee_position_controller_node
-  lee_position_controller ${catkin_LIBRARIES})
+  uav_lee_position_controller ${catkin_LIBRARIES})
 
-install(TARGETS lee_position_controller
+install(TARGETS uav_lee_position_controller
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
@@ -55,3 +55,9 @@ install(
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
 )
+
+# 这三个install的区别是什么啊
+
+# 可能跟install的位置有关系
+# liblee_position_controller.so => /home/scarlett/Workspaces/rotors_integration_ws/devel/lib/liblee_position_controller.so (0x00007fed7dcff000)
+# liblee_position_controller.so => /home/scarlett/Workspaces/rotors_integration_ws/devel/lib/liblee_position_controller.so (0x00007f1721906000)
