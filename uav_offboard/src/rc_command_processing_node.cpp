@@ -66,8 +66,10 @@ void RcCommandProcessingNode::OdometryCallback(const nav_msgs::OdometryConstPtr&
   pos_setpoint_ = pos_last_;
 	GetEulerAnglesFromQuaternion(msg->pose.pose.orientation,euler_last_);
   att_setpoint_ = euler_last_;
-  SetAndPubGeometryPose();
   }
+  if(!is_armed_){
+    SetAndPubGeometryPose();
+  }//do not publish after arm
   // As long as the joystick does push above middle point
   // the local_position received from mavros will in turn serve as setpoint_position command
 }
@@ -108,7 +110,7 @@ void RcCommandProcessingNode::SetArmKillInfo(){
   if(sw_kill_ < 1500 && sw_arm_ > 1500){//do no kill, do arm
 	// ROS_INFO_STREAM("arm state");
 	is_killed_ = false;
-	is_armed_ = true;
+	// is_armed_ = true;
 	is_normal_ = false;
   if( current_state_.mode != "OFFBOARD"){
     if( set_mode_client_.call(offb_set_mode_srv_) &&offb_set_mode_srv_.response.mode_sent){
@@ -117,6 +119,7 @@ void RcCommandProcessingNode::SetArmKillInfo(){
   }else {
       if(!current_state_.armed){
         if( arming_client_.call(arm_cmd_srv_) && arm_cmd_srv_.response.success){
+          is_armed_ = true;
           ROS_INFO("Vehicle armed");
         }
       }
@@ -145,9 +148,9 @@ void RcCommandProcessingNode::SetArmKillInfo(){
 	if(count_ == 1){//will execute only once
 	//   ROS_INFO_STREAM("init controller ....");
 	  pos_setpoint_ = pos_last_;
-      att_setpoint_ = euler_last_;
+    att_setpoint_ = euler_last_;
 
-      pos_velocity_setpoint_.x = 0;	pos_velocity_setpoint_.y = 0;	pos_velocity_setpoint_.z = 0;
+    pos_velocity_setpoint_.x = 0;	pos_velocity_setpoint_.y = 0;	pos_velocity_setpoint_.z = 0;
 	  att_velocity_setpoint_.x = 0;	att_velocity_setpoint_.y = 0;	att_velocity_setpoint_.z = 0;
 
 	  SetAndPubTrajectoryPoint();
