@@ -5,7 +5,9 @@ channel_configuration:
   '3': {min: 1079, mid: 1497, max: 1918} # left horizontal joystick:  left, mid, right
 # the above value is suitable for remote controller with tag: "Jiali Sun RC 5DOF-back"
 
-linear_velocity_max: {x: 0.8, y: 0.8, z: 0.5} # m/s
+linear_velocity_max: {x: 0.2, y: 0.2, z: 0.2} # m/s
 angular_velocity_max: {x: 0.5, y: 0.5, z: 0.5} # rad/s
 
 delta_t: 0.01 # 0.01s, 100Hz
+
+need_offboard: false # false in simulation, true in real flight
