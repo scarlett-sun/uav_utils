@@ -20,6 +20,7 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
+#include <mavros_msgs/PositionTarget.h>
 
 
 class RcCommandProcessingNode{
@@ -40,12 +41,14 @@ class RcCommandProcessingNode{
   void MapJoystickToVel();
   void ComputeSetpoint();
   void SetAndPubTrajectoryPoint();
-  void SetAndPubGeometryPose();
+  // void SetAndPubGeometryPose();
+  void SetAndPubPositionRaw();
   void InitializeParams();
 
  public://publishers and subscribers and timers
   ros::Publisher trajectory_point_pub_;//for rotors gazebo simulation
-  ros::Publisher setpoint_pos_pub_;//for offboard real flight
+  // ros::Publisher setpoint_pos_pub_;//for offboard real flight, commented out, effect not good: large response delay 
+  ros::Publisher setpoint_raw_pub_;//try this one
   ros::Publisher attitude_euler_pub_;//for debug only
   ros::Subscriber get_rc_channel_sub_;
   ros::Subscriber local_pos_sub_;
@@ -62,9 +65,11 @@ class RcCommandProcessingNode{
   geometry_msgs::Vector3 pos_setpoint_;//position setpoint
   geometry_msgs::Vector3 att_setpoint_;//attitude setpoint(euler)
   geometry_msgs::Vector3 pos_velocity_setpoint_;//linear velocity setpoint
+  geometry_msgs::Vector3 pos_acc_setpoint_;
   geometry_msgs::Vector3 att_velocity_setpoint_;//angular velocity setpoint
   trajectory_msgs::MultiDOFJointTrajectory trajectory_point_msg_;//trajectory to send to the controller
   geometry_msgs::PoseStamped pose_stamped_msg_;
+  mavros_msgs::PositionTarget position_target_msg_;
   mavros_msgs::State current_state_;
 
   mavros_msgs::SetMode offb_set_mode_srv_;
@@ -94,5 +99,6 @@ class RcCommandProcessingNode{
 
   float dt_;
   int thrust_mid_;
+  bool need_offboard_;
   };
 #endif

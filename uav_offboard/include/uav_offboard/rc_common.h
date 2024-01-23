@@ -98,6 +98,11 @@ inline void GetDeltaT(const ros::NodeHandle& nh, float& delta_t){
   nh.getParam("delta_t",delta_t);
 }
 
+/*get ros parameter need_offboard*/
+inline void GetMode(const ros::NodeHandle& nh, bool& need_offboard){
+  nh.getParam("need_offboard",need_offboard);
+}
+
 /*Get euler angles from quaternion*/
 inline void GetEulerAnglesFromQuaternion(const geometry_msgs::Quaternion& q, 
                                         geometry_msgs::Vector3& euler_angles){
