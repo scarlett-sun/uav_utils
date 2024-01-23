@@ -11,7 +11,8 @@ RcCommandProcessingNode::RcCommandProcessingNode(const ros::NodeHandle& nh):nh_(
   timer_ = nh_.createTimer(ros::Duration(dt_), &RcCommandProcessingNode::TimedCommandCallback, this,false, false);//timer
   
   trajectory_point_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>("command/trajectory",10);//trajectory point publisher
-  setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",10);
+  // setpoint_pos_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_position/local",10);
+  setpoint_raw_pub_ = nh_.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local",10);
   attitude_euler_pub_ = nh_.advertise<geometry_msgs::Vector3>("attitude_euler",10);
   
   get_rc_channel_sub_ = nh_.subscribe("/mavros/rc/in",100, &RcCommandProcessingNode::RcInCallback,this);// rc signal subscriber
@@ -39,11 +40,13 @@ void RcCommandProcessingNode::InitializeParams(){
   is_killed_ = false;
   is_normal_ = true;
   position_or_attitude_ = true;//default position mode
+  need_offboard_ = false;
   
   GetChannelConfiguration(private_nh_,ch_config_);
   GetMaxVelocity(private_nh_,twist_);
   dt_ = kDefaultDt;	
   GetDeltaT(private_nh_,dt_);
+  GetMode(private_nh_,need_offboard_);
 
   count_ = 0;
   thrust_mid_ = ch_config_.channels.at(2).mid;
@@ -68,7 +71,8 @@ void RcCommandProcessingNode::OdometryCallback(const nav_msgs::OdometryConstPtr&
   att_setpoint_ = euler_last_;
   }
   if(!is_armed_){
-    SetAndPubGeometryPose();
+    // SetAndPubGeometryPose();//try, do not use setpoint_position
+    SetAndPubPositionRaw();
   }//do not publish after arm
   // As long as the joystick does push above middle point
   // the local_position received from mavros will in turn serve as setpoint_position command
@@ -101,42 +105,51 @@ void RcCommandProcessingNode::TimedCommandCallback(const ros::TimerEvent& e){
   MapJoystickToVel();
   ComputeSetpoint();
   SetAndPubTrajectoryPoint();
-  SetAndPubGeometryPose();
+  // SetAndPubGeometryPose();try, do not set setpoint_position msg
+  SetAndPubPositionRaw();//set setpoint_raw msg
   attitude_euler_pub_.publish(att_setpoint_);//for debug only
 }
 
 /*Set current arm & kill combination state, need to be customized*/
 void RcCommandProcessingNode::SetArmKillInfo(){
   if(sw_kill_ < 1500 && sw_arm_ > 1500){//do no kill, do arm
-	// ROS_INFO_STREAM("arm state");
-	is_killed_ = false;
-	// is_armed_ = true;
-	is_normal_ = false;
-  if( current_state_.mode != "OFFBOARD"){
-    if( set_mode_client_.call(offb_set_mode_srv_) &&offb_set_mode_srv_.response.mode_sent){
-      ROS_INFO("Offboard enabled");
-    }
-  }else {
-      if(!current_state_.armed){
-        if( arming_client_.call(arm_cmd_srv_) && arm_cmd_srv_.response.success){
-          is_armed_ = true;
-          ROS_INFO("Vehicle armed");
+    // ROS_INFO_STREAM("arm state");
+    is_killed_ = false;
+    // is_armed_ = true;
+    is_normal_ = false;
+
+    if(need_offboard_){
+      if( current_state_.mode != "OFFBOARD"){
+        if( set_mode_client_.call(offb_set_mode_srv_) &&offb_set_mode_srv_.response.mode_sent){
+          ROS_INFO("Offboard enabled");
+        }
+      } 
+      else {
+        if(!current_state_.armed){
+          if( arming_client_.call(arm_cmd_srv_) && arm_cmd_srv_.response.success){
+            is_armed_ = true;
+            ROS_INFO("Vehicle armed");
+          }
         }
       }
     } 
+    else {
+      is_armed_ = true;
+      ROS_INFO("Vehicle armed");
+    }
   }
   else if((sw_kill_ > 1500 && sw_arm_ > 1500)
   			||(sw_kill_ > 1500 && sw_arm_ < 1500)){//do kill, whether do arm or not
-	// ROS_INFO_STREAM("kill state");
-	is_armed_ = false;
-	is_killed_ = true;
-	is_normal_ = false;
+    // ROS_INFO_STREAM("kill state");
+    is_armed_ = false;
+    is_killed_ = true;
+    is_normal_ = false;
   }
   else if(sw_kill_ < 1500 && sw_arm_ < 1500){//do no kill,do no arm
-	// ROS_INFO_STREAM("normal state");
-	is_armed_=false;
-	is_killed_ = false;
-	is_normal_ = true;
+    // ROS_INFO_STREAM("normal state");
+    is_armed_ = false;
+    is_killed_ = false;
+    is_normal_ = true;
   }
 
   //judge if the thrust is up to middle
@@ -152,9 +165,10 @@ void RcCommandProcessingNode::SetArmKillInfo(){
 
     pos_velocity_setpoint_.x = 0;	pos_velocity_setpoint_.y = 0;	pos_velocity_setpoint_.z = 0;
 	  att_velocity_setpoint_.x = 0;	att_velocity_setpoint_.y = 0;	att_velocity_setpoint_.z = 0;
-
+    pos_acc_setpoint_.x = 0;      pos_acc_setpoint_.y = 0;      pos_acc_setpoint_.z = 0;
 	  SetAndPubTrajectoryPoint();
-    SetAndPubGeometryPose();
+    // SetAndPubGeometryPose();//try, do not set setpoint_position msg
+    SetAndPubPositionRaw();
 	  timer_.start();//start the timer
 	}
   }
@@ -230,16 +244,35 @@ void RcCommandProcessingNode::SetAndPubTrajectoryPoint(){
   trajectory_point_pub_.publish(trajectory_point_msg_);
 }
 
-/*Set and publish geometry_msg::posestamped message*/
-void RcCommandProcessingNode::SetAndPubGeometryPose(){
-  pose_stamped_msg_.pose.position.x = pos_setpoint_.x;
-  pose_stamped_msg_.pose.position.y = pos_setpoint_.y;
-  pose_stamped_msg_.pose.position.z = pos_setpoint_.z;
-  pose_stamped_msg_.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw
-  															(att_setpoint_.x, att_setpoint_.y, att_setpoint_.z);
-  pose_stamped_msg_.header.stamp = ros::Time::now();
+
+// /*Set and publish geometry_msg::posestamped message*/
+// void RcCommandProcessingNode::SetAndPubGeometryPose(){
+//   pose_stamped_msg_.pose.position.x = pos_setpoint_.x;
+//   pose_stamped_msg_.pose.position.y = pos_setpoint_.y;
+//   pose_stamped_msg_.pose.position.z = pos_setpoint_.z;
+//   pose_stamped_msg_.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw
+//   															(att_setpoint_.x, att_setpoint_.y, att_setpoint_.z);
+//   pose_stamped_msg_.header.stamp = ros::Time::now();
   
-  setpoint_pos_pub_.publish(pose_stamped_msg_);
+//   setpoint_pos_pub_.publish(pose_stamped_msg_);
+// }
+
+
+/*Set and publish geometry_msg::posestamped message*/
+void RcCommandProcessingNode::SetAndPubPositionRaw(){
+  position_target_msg_.header.stamp = ros::Time::now();
+
+  position_target_msg_.position.x = pos_setpoint_.x;
+  position_target_msg_.position.y = pos_setpoint_.y;
+  position_target_msg_.position.z = pos_setpoint_.z;
+  position_target_msg_.velocity = pos_velocity_setpoint_;
+  position_target_msg_.acceleration_or_force = pos_acc_setpoint_;
+
+  position_target_msg_.yaw = att_setpoint_.z;
+  position_target_msg_.yaw_rate = att_velocity_setpoint_.z;
+  position_target_msg_.coordinate_frame = 1;//LOCAL_NED
+
+  setpoint_raw_pub_.publish(position_target_msg_);
 }
 
 int main(int argc, char **argv){
